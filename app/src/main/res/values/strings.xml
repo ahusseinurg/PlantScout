@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PlantScout</string>
+    <string name="plan_title">Eradication plan</string>
+    <string name="empty_hint">No plants scanned yet.\n\nTap \"Scan plant\" to photograph a plant, or \"From photos\" to identify several at once. Close-ups of a leaf or flower work best.</string>
+    <string name="scan">Scan plant</string>
+    <string name="gallery">From photos</string>
+</resources>

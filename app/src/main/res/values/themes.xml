@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.PlantScout" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/green_primary</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#C8E6C9</item>
+        <item name="colorOnPrimaryContainer">#0B2E13</item>
+    </style>
+</resources>
