@@ -140,7 +140,36 @@ object PlanGenerator {
             section(sb, "Herbicide options (last resort)", pb.chemical)
             section(sb, "Disposal", pb.disposal)
             section(sb, "Follow-up", pb.followUp)
+            val goat = GoatGuide.forPlant(c, g.info)
+            section(sb, "Goat grazing: ${goat.fit.label}", listOf(goat.text))
         }
+
+        // ---- Goats
+        val goatAdvice = groups.map { it to GoatGuide.forPlant(it.candidate, it.info) }
+        val usable = goatAdvice.filter { it.second.fit.rank >= GoatFit.PARTIAL.rank }
+        val unsafe = goatAdvice.filter { it.second.fit == GoatFit.UNSAFE }
+        val caution = goatAdvice.filter { it.second.fit == GoatFit.CAUTION }
+        sb.line()
+        sb.line("## Using goats")
+        if (usable.isEmpty()) {
+            sb.line("Goats aren't a good fit for the plants you scanned — use the other methods above.")
+        } else {
+            sb.line("Goats (targeted grazing) can help control:")
+            usable.sortedByDescending { it.second.fit.rank }.forEach { (g, a) ->
+                sb.line("• ${g.candidate.displayName} — ${a.fit.label}")
+            }
+        }
+        if (unsafe.isNotEmpty()) {
+            sb.line()
+            sb.line("⚠ Not safe for goats — remove these by hand BEFORE grazing:")
+            unsafe.forEach { (g, _) -> sb.line("• ${g.candidate.displayName}") }
+        }
+        if (caution.isNotEmpty()) {
+            sb.line()
+            sb.line("Use caution (only as part of a mixed diet):")
+            caution.forEach { (g, _) -> sb.line("• ${g.candidate.displayName}") }
+        }
+        if (usable.isNotEmpty()) section(sb, "How to graze with goats", GoatGuide.howTo)
 
         // ---- Supplies
         sb.line()
@@ -164,6 +193,9 @@ object PlanGenerator {
         }
         if (strategies.any { it in setOf(KNOTWEED, CREEPING, BULB) }) {
             sb.line("• Monthly for the next 2–3 years: check for regrowth from roots, runners or tubers.")
+        }
+        if (goatAdvice.any { it.second.fit.rank >= GoatFit.GOOD.rank }) {
+            sb.line("• If using goats: first grazing in spring to early summer, then again each time regrowth reaches 15–30 cm (6–12 in).")
         }
         sb.line("• Next year: rescan the area with PlantScout to catch newcomers and confirm what's gone.")
         sb.line()
