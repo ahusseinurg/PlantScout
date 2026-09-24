@@ -295,6 +295,13 @@ object CustomerPlanBuilder {
         notes.append("\nThis plan is guidance based on the information available. Local regulations, weather and site conditions can change what's appropriate.")
         s += PlanSection("Notes and limitations", notes.toString().trim())
 
+        // Fill any leftover address placeholder with the service address.
+        val address = customer.address.trim().replace(Regex("\\s+"), " ")
+        s.forEach { sec ->
+            sec.body = if (address.isNotEmpty()) sec.body.replace("[PROPERTY]", address)
+            else sec.body.replace(Regex("\\s+at \\[PROPERTY]"), "").replace("[PROPERTY]", "the property")
+        }
+
         val now = System.currentTimeMillis()
         return CustomerPlan(
             id = UUID.randomUUID().toString(),

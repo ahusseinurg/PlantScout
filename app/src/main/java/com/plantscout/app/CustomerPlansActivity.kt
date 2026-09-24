@@ -297,7 +297,7 @@ class CustomerPlansActivity : AppCompatActivity() {
                     if (cancelled) return@forEachIndexed
                     status("Researching ${w.label}…\n(${i + 1} of ${weeds.size}. Each weed can take a minute.)", i)
                     try {
-                        w.ai = CrmClient.recommendation(this, customer.jobId, w.label)
+                        w.ai = CrmClient.recommendation(this, customer.jobId, w.label, customer.address)
                     } catch (e: Exception) {
                         w.error = e.message
                     }
@@ -305,7 +305,7 @@ class CustomerPlansActivity : AppCompatActivity() {
                 if (!cancelled) {
                     status("Writing the overall site plan…", weeds.size)
                     try {
-                        overview = CrmClient.overview(this, customer.jobId, CustomerPlanBuilder.overviewInput(weeds), notes, mode)
+                        overview = CrmClient.overview(this, customer.jobId, CustomerPlanBuilder.overviewInput(weeds), notes, mode, customer.address)
                     } catch (e: Exception) {
                         overviewError = e.message
                     }

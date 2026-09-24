@@ -258,18 +258,19 @@ object CrmClient {
     }
 
     /** AI research + recommendation for one weed (a few minutes at most). */
-    fun recommendation(ctx: Context, jobId: Long, weedName: String): JSONObject =
+    fun recommendation(ctx: Context, jobId: Long, weedName: String, serviceAddress: String = ""): JSONObject =
         request(
             CrmPrefs.url(ctx), CrmPrefs.token(ctx), "/recommendation", "POST",
-            JSONObject().put("job_id", jobId).put("weed_name", weedName),
+            JSONObject().put("job_id", jobId).put("weed_name", weedName).put("service_address", serviceAddress),
             readTimeoutMs = 240_000
         )
 
     /** AI whole-site plan tying all weeds together. */
-    fun overview(ctx: Context, jobId: Long, weeds: JSONArray, staffNotes: String, mode: String): JSONObject =
+    fun overview(ctx: Context, jobId: Long, weeds: JSONArray, staffNotes: String, mode: String, serviceAddress: String = ""): JSONObject =
         request(
             CrmPrefs.url(ctx), CrmPrefs.token(ctx), "/overview", "POST",
-            JSONObject().put("job_id", jobId).put("weeds", weeds).put("staff_notes", staffNotes).put("mode", mode),
+            JSONObject().put("job_id", jobId).put("weeds", weeds).put("staff_notes", staffNotes).put("mode", mode)
+                .put("service_address", serviceAddress),
             readTimeoutMs = 240_000
         )
 
