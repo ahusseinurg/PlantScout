@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.Menu
@@ -25,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import androidx.appcompat.app.AlertDialog
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -46,6 +48,8 @@ class MainActivity : AppCompatActivity() {
     private var pendingOrgan = "auto"
     private var cameraFile: File? = null
     private var pendingJobs = 0
+    private var pendingApk: File? = null
+    private var updateCheckRunning = false
 
     private val organKeys = arrayOf("auto", "leaf", "flower", "fruit", "bark")
     private val organLabels = arrayOf("Let the app decide", "Leaf", "Flower", "Fruit / seeds", "Bark / stem")
@@ -89,7 +93,133 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateUi()
-        if (savedInstanceState == null && Prefs.apiKey(this).isBlank()) showSettings(firstRun = true)
+        if (savedInstanceState == null) {
+            if (Prefs.apiKey(this).isBlank()) showSettings(firstRun = true)
+            checkForUpdates(manual = false)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Coming back from the "allow installs" settings screen
+        val apk = pendingApk
+        if (apk != null && packageManager.canRequestPackageInstalls()) {
+            pendingApk = null
+            installApk(apk)
+        }
+    }
+
+    // ---------- Updates ----------
+
+    private fun checkForUpdates(manual: Boolean) {
+        if (updateCheckRunning) return
+        updateCheckRunning = true
+        if (manual) toast("Checking for updates…")
+        Thread {
+            val result = runCatching { UpdateChecker.fetchLatest() }
+            runOnUiThread {
+                updateCheckRunning = false
+                if (isDestroyed) return@runOnUiThread
+                val release = result.getOrNull()
+                val current = UpdateChecker.currentVersionCode(this)
+                when {
+                    result.isFailure -> if (manual) toast("Couldn't check for updates. Check your internet connection.")
+                    release == null -> if (manual) toast("No releases found on GitHub yet.")
+                    release.versionCode > current -> showUpdateDialog(release)
+                    else -> if (manual) toast("You're up to date (version ${UpdateChecker.currentVersionName(this)}).")
+                }
+            }
+        }.start()
+    }
+
+    private fun showUpdateDialog(release: UpdateChecker.Release) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Update available")
+            .setMessage("${release.name} is ready to install.\n\nYou have version ${UpdateChecker.currentVersionName(this)}. Your scans and settings will be kept.")
+            .setPositiveButton("Update") { _, _ -> downloadUpdate(release) }
+            .setNegativeButton("Later", null)
+            .show()
+    }
+
+    private fun downloadUpdate(release: UpdateChecker.Release) {
+        val bar = LinearProgressIndicator(this)
+        bar.isIndeterminate = true
+        bar.max = 100
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val box = FrameLayout(this)
+        box.setPadding(pad, pad / 2, pad, pad / 2)
+        box.addView(bar)
+        val dialog: AlertDialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Downloading update…")
+            .setView(box)
+            .setCancelable(false)
+            .show()
+
+        // Stored in the app's cache folder already shared through FileProvider
+        val dest = File(File(cacheDir, "camera").apply { mkdirs() }, "PlantScout-update.apk")
+        Thread {
+            val result = runCatching {
+                UpdateChecker.download(release.apkUrl, dest) { pct ->
+                    runOnUiThread {
+                        if (pct >= 0) {
+                            if (bar.isIndeterminate) {
+                                bar.visibility = View.INVISIBLE
+                                bar.isIndeterminate = false
+                                bar.visibility = View.VISIBLE
+                            }
+                            bar.setProgressCompat(pct, true)
+                        }
+                    }
+                }
+            }
+            runOnUiThread {
+                if (isDestroyed) return@runOnUiThread
+                dialog.dismiss()
+                result.onSuccess { installApk(dest) }
+                    .onFailure {
+                        toast("Download failed — opening it in your browser instead.")
+                        openUrl(release.apkUrl)
+                    }
+            }
+        }.start()
+    }
+
+    private fun installApk(apk: File) {
+        if (!packageManager.canRequestPackageInstalls()) {
+            pendingApk = apk
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Allow updates")
+                .setMessage("To install updates, Android needs your permission. On the next screen, turn on \"Allow from this source\", then come back.")
+                .setPositiveButton("Open settings") { _, _ ->
+                    try {
+                        startActivity(
+                            Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
+                        )
+                    } catch (e: ActivityNotFoundException) {
+                        toast("Open Settings > Apps > PlantScout > Install unknown apps")
+                    }
+                }
+                .setNegativeButton("Cancel") { _, _ -> pendingApk = null }
+                .show()
+            return
+        }
+        try {
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", apk)
+            val intent = Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+        } catch (e: Exception) {
+            toast("Couldn't open the installer: ${e.message}")
+        }
+    }
+
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            toast("Open this in your browser: $url")
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -269,13 +399,20 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        menu.add(Menu.NONE, MENU_UPDATE, Menu.NONE,
+            "Check for updates (v${UpdateChecker.currentVersionName(this)})")
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.action_settings -> { showSettings(); true }
         R.id.action_clear -> { clearAll(); true }
+        MENU_UPDATE -> { checkForUpdates(manual = true); true }
         else -> super.onOptionsItemSelected(item)
+    }
+
+    companion object {
+        private const val MENU_UPDATE = 9001
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
