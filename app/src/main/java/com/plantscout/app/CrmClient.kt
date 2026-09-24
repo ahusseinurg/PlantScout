@@ -130,10 +130,20 @@ object CrmPrefs {
 /** Talks to the "PlantScout Connector for URG" WordPress plugin. */
 object CrmClient {
 
+    /**
+     * Turns whatever was typed or pasted into the site's base address:
+     * removes spaces (phone keyboards add them after dots), adds https://,
+     * and drops anything after the address such as /wp-admin or ?rest_route=...
+     */
     fun normalizeUrl(input: String): String {
-        var u = input.trim()
+        var u = input.replace(Regex("\\s+"), "").trim()
         if (u.isEmpty()) return u
         if (!u.startsWith("http://", true) && !u.startsWith("https://", true)) u = "https://$u"
+        u = u.substringBefore('?').substringBefore('#')
+        for (marker in listOf("/wp-admin", "/wp-login", "/wp-json", "/dashboard")) {
+            val i = u.indexOf(marker, ignoreCase = true)
+            if (i > 0) u = u.substring(0, i)
+        }
         return u.trimEnd('/')
     }
 
@@ -198,7 +208,10 @@ object CrmClient {
         } catch (e: CrmException) {
             throw e
         } catch (e: java.net.UnknownHostException) {
-            throw CrmException("Can't reach the website. Check the address and your internet connection.")
+            val host = try { URL(normalizeUrl(base)).host } catch (x: Exception) { base }
+            throw CrmException("Can't find the website \"$host\". Check the spelling (no spaces) and that the phone has internet.")
+        } catch (e: javax.net.ssl.SSLException) {
+            throw CrmException("Secure connection to ${normalizeUrl(base)} failed. If your site has no https certificate, ask your web host to add one.")
         } catch (e: java.net.SocketTimeoutException) {
             throw CrmException("The CRM took too long to respond. Try again.")
         } catch (e: IOException) {

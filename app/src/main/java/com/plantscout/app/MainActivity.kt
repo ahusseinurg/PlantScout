@@ -91,6 +91,9 @@ class MainActivity : AppCompatActivity() {
         planButton.setOnClickListener {
             startActivity(Intent(this, PlanActivity::class.java))
         }
+        findViewById<MaterialButton>(R.id.btnAddManual).setOnClickListener {
+            AddPlantSheet(this) { c -> addManualPlant(c) }.show()
+        }
 
         updateUi()
         if (savedInstanceState == null) {
@@ -308,6 +311,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** A plant typed in by name: no photo, marked as added manually. */
+    private fun addManualPlant(c: Candidate) {
+        val record = PlantRecord(UUID.randomUUID().toString(), "", "manual", listOf(c))
+        plants.add(0, record)
+        adapter.notifyItemInserted(0)
+        recycler.scrollToPosition(0)
+        PlantStore.save(this, plants)
+        updateUi()
+    }
+
     // ---------- UI ----------
 
     private fun updateUi() {
@@ -327,6 +340,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun reviewPlant(position: Int) {
         val p = plants.getOrNull(position) ?: return
+        if (p.isManual) {
+            val c = p.selected
+            MaterialAlertDialogBuilder(this)
+                .setTitle(c?.displayName ?: "Plant")
+                .setMessage(
+                    "Added manually" +
+                        (c?.let { if (it.commonName != it.scientificName) "\nScientific name: ${it.scientificName}" else "" } ?: "") +
+                        (c?.family?.takeIf { it.isNotBlank() }?.let { "\nFamily: $it" } ?: "")
+                )
+                .setNeutralButton("Remove") { _, _ ->
+                    plants.removeAt(position)
+                    adapter.notifyItemRemoved(position)
+                    PlantStore.save(this, plants)
+                    updateUi()
+                }
+                .setPositiveButton("Close", null)
+                .show()
+            return
+        }
         val labels = p.candidates.map {
             "${it.displayName}\n${it.scientificName} · ${(it.score * 100).roundToInt()}%"
         }.toTypedArray()
@@ -421,6 +453,12 @@ class MainActivity : AppCompatActivity() {
         private const val MENU_CONNECTION = 9003
     }
 
+    private fun themeColor(attr: Int): Int {
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(attr, tv, true)
+        return tv.data
+    }
+
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
 
     // ---------- List adapter ----------
@@ -447,17 +485,28 @@ class MainActivity : AppCompatActivity() {
             holder.sci.text = c?.scientificName ?: ""
             val pct = ((c?.score ?: 0.0) * 100).roundToInt()
             val others = if (p.candidates.size > 1) " · tap to see ${p.candidates.size - 1} other match(es)" else ""
-            holder.conf.text = "$pct% match · ${p.organ}$others"
+            holder.conf.text = if (p.isManual) "Added manually" else "$pct% match · ${p.organ}$others"
+            if (p.isManual && c != null && c.commonName.equals(c.scientificName, ignoreCase = true)) holder.sci.text = ""
 
             val flags = mutableListOf<String>()
-            if (pct < 30) flags += "Low confidence – tap to review"
+            if (pct < 30 && !p.isManual) flags += "Low confidence – tap to review"
             if (c != null) KnowledgeBase.lookup(c).info.hazards.forEach { flags += "⚠ ${it.label}" }
             holder.flags.text = flags.joinToString("\n")
             holder.flags.visibility = if (flags.isEmpty()) View.GONE else View.VISIBLE
 
-            val bmp = thumbCache[p.imagePath]
-                ?: ImageUtils.thumbnail(p.imagePath, 200)?.also { thumbCache[p.imagePath] = it }
-            holder.thumb.setImageBitmap(bmp)
+            if (p.imagePath.isBlank()) {
+                // Manual plant: a leaf icon on a soft tinted circle-ish background.
+                holder.thumb.scaleType = ImageView.ScaleType.CENTER
+                holder.thumb.setImageResource(R.drawable.ic_grass)
+                holder.thumb.setBackgroundResource(R.drawable.bg_avatar)
+                holder.thumb.backgroundTintList = android.content.res.ColorStateList.valueOf(themeColor(com.google.android.material.R.attr.colorPrimaryContainer))
+            } else {
+                holder.thumb.scaleType = ImageView.ScaleType.CENTER_CROP
+                holder.thumb.background = null
+                val bmp = thumbCache[p.imagePath]
+                    ?: ImageUtils.thumbnail(p.imagePath, 200)?.also { thumbCache[p.imagePath] = it }
+                holder.thumb.setImageBitmap(bmp)
+            }
 
             holder.itemView.setOnClickListener {
                 val pos = holder.bindingAdapterPosition

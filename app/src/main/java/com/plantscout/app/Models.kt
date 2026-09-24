@@ -8,9 +8,12 @@ data class Candidate(
     val commonName: String,
     val genus: String,
     val family: String,
-    val score: Double
+    val score: Double,
+    /** "" for photo identification, or SOURCE_MANUAL when typed in by hand. */
+    val source: String = ""
 ) {
     val displayName: String get() = commonName.ifBlank { scientificName }
+    val isManual: Boolean get() = source == SOURCE_MANUAL
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("sci", scientificName)
@@ -18,15 +21,19 @@ data class Candidate(
         put("genus", genus)
         put("family", family)
         put("score", score)
+        put("source", source)
     }
 
     companion object {
+        const val SOURCE_MANUAL = "manual"
+
         fun fromJson(o: JSONObject) = Candidate(
             o.optString("sci"),
             o.optString("common"),
             o.optString("genus"),
             o.optString("family"),
-            o.optDouble("score", 0.0)
+            o.optDouble("score", 0.0),
+            o.optString("source")
         )
     }
 }
@@ -39,6 +46,7 @@ data class PlantRecord(
     var selectedIndex: Int = 0
 ) {
     val selected: Candidate? get() = candidates.getOrNull(selectedIndex)
+    val isManual: Boolean get() = imagePath.isBlank() || selected?.isManual == true
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id)

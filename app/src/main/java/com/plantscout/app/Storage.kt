@@ -21,7 +21,7 @@ object PlantStore {
             val arr = JSONArray(raw)
             (0 until arr.length())
                 .map { PlantRecord.fromJson(arr.getJSONObject(it)) }
-                .filter { File(it.imagePath).exists() && it.candidates.isNotEmpty() }
+                .filter { it.candidates.isNotEmpty() && (it.imagePath.isBlank() || File(it.imagePath).exists()) }
                 .toMutableList()
         } catch (e: Exception) {
             mutableListOf()

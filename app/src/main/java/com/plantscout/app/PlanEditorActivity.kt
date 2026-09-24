@@ -10,7 +10,6 @@ import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -294,120 +293,24 @@ class PlanEditorActivity : AppCompatActivity() {
         return "Hello $first,\n\n$body\n\nIf you have any questions or would like to schedule a visit, just reply to this email.\n\nThank you,\n$company"
     }
 
-    private fun validEmail(e: String) = android.util.Patterns.EMAIL_ADDRESS.matcher(e).matches()
-
     /** Send through the CRM (from the business) or fall back to the phone's email app. */
     private fun showSendDialog() {
-        collectAndSave()
-        val box = LinearLayout(this)
-        box.orientation = LinearLayout.VERTICAL
-        box.setPadding(dp(20), dp(8), dp(20), 0)
-
-        val custEmail = plan.customer.email.trim()
-        val toCustomer = CheckBox(this)
-        if (custEmail.isNotBlank()) {
-            toCustomer.text = "Customer: $custEmail"
-            toCustomer.isChecked = true
-        } else {
-            toCustomer.text = "Customer has no email on file"
-            toCustomer.isEnabled = false
-        }
-        box.addView(toCustomer)
-
-        val others = EditText(this)
-        others.hint = "Other email addresses (separate with commas)"
-        others.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-        box.addView(others)
-
-        val businessEmail = CrmPrefs.branding(this)?.email.orEmpty()
-        val copyMe = CheckBox(this)
-        copyMe.text = "Send a copy to the business" + if (businessEmail.isNotBlank()) " ($businessEmail)" else ""
-        if (businessEmail.isNotBlank()) box.addView(copyMe)
-
-        val subject = EditText(this)
-        subject.hint = "Subject"
-        subject.setText(defaultSubject())
-        box.addView(subject)
-
-        val message = EditText(this)
-        message.hint = "Message"
-        message.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-        message.minLines = 5
-        message.gravity = Gravity.TOP or Gravity.START
-        message.setText(defaultMessage())
-        box.addView(message)
-
-        val status = TextView(this)
-        status.setPadding(0, dp(6), 0, 0)
-        box.addView(status)
-
-        val scroll = ScrollView(this)
-        scroll.addView(box)
-        val viaCrm = CrmPrefs.isConfigured(this)
-
-        fun recipients(): List<String> {
-            val list = mutableListOf<String>()
-            if (toCustomer.isEnabled && toCustomer.isChecked) list += custEmail
-            others.text.toString().split(',', ';', ' ', '\n').map { it.trim() }.filter { it.isNotEmpty() }.forEach { list += it }
-            return list.distinctBy { it.lowercase() }
-        }
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Send plan")
-            .setMessage(
-                if (viaCrm) "The PDF is emailed from your business through the CRM and logged on the job."
-                else "Not connected to the CRM, so this will open your phone's email app."
-            )
-            .setView(scroll)
-            .setPositiveButton(if (viaCrm) "Send" else "Open email app", null)
-            .setNeutralButton(if (viaCrm) "Use my email app" else "", null)
-            .setNegativeButton("Cancel", null)
-            .show()
-
-        dialog.getButton(android.content.DialogInterface.BUTTON_NEUTRAL)?.setOnClickListener {
-            val to = recipients()
-            dialog.dismiss()
-            emailFromPhone(to, subject.text.toString(), message.text.toString())
-        }
-        dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setOnClickListener { btn ->
-            val to = recipients()
-            val bad = to.filterNot { validEmail(it) }
-            when {
-                bad.isNotEmpty() -> { status.text = "Check these addresses: ${bad.joinToString()}"; return@setOnClickListener }
-                to.isEmpty() && !(copyMe.isChecked && businessEmail.isNotBlank()) -> {
-                    status.text = "Choose the customer or add at least one email address."
-                    return@setOnClickListener
-                }
-            }
-            if (!viaCrm) {
-                dialog.dismiss()
-                emailFromPhone(to, subject.text.toString(), message.text.toString())
-                return@setOnClickListener
-            }
-            val pdf = buildPdf() ?: return@setOnClickListener
-            btn.isEnabled = false
-            status.text = "Sending…"
-            val subj = subject.text.toString().trim()
-            val msg = message.text.toString().trim()
-            val copy = copyMe.isChecked && businessEmail.isNotBlank()
-            Thread {
-                val r = runCatching { CrmClient.sendPlan(this, plan.customer.jobId, to, copy, subj, msg, pdf) }
-                runOnUiThread {
-                    if (isDestroyed) return@runOnUiThread
-                    btn.isEnabled = true
-                    r.onSuccess { sentTo ->
-                        val stamp = SimpleDateFormat("d MMM yyyy HH:mm", Locale.getDefault()).format(Date())
-                        plan.sentLog += "$stamp — ${sentTo.joinToString()}"
-                        CustomerPlanStore.save(this, plan)
-                        refreshSentInfo()
-                        dialog.dismiss()
-                        Toast.makeText(this, "Sent to ${sentTo.joinToString()}", Toast.LENGTH_LONG).show()
-                    }.onFailure { e ->
-                        status.text = (e.message ?: "Couldn't send.") + "\nYou can try again, or tap \"Use my email app\"."
-                    }
-                }
-            }.start()
-        }
+        val pdf = buildPdf() ?: return
+        SendPlanSheet(
+            this,
+            plan,
+            pdf,
+            defaultSubject(),
+            defaultMessage(),
+            onPreview = { exportPdf(MENU_PREVIEW) },
+            onSent = { sentTo ->
+                val stamp = SimpleDateFormat("d MMM yyyy HH:mm", Locale.getDefault()).format(Date())
+                plan.sentLog += "$stamp — ${sentTo.joinToString()}"
+                CustomerPlanStore.save(this, plan)
+                refreshSentInfo()
+            },
+            onUsePhone = { to, subject, message -> emailFromPhone(to, subject, message) }
+        ).show()
     }
 
     private fun emailFromPhone(to: List<String>, subject: String, message: String) {

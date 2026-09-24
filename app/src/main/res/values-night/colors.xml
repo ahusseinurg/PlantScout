@@ -1,0 +1,8 @@
+<resources>
+    <color name="pill_done_bg">#1E3B29</color>
+    <color name="pill_done_text">#9FE2B5</color>
+    <color name="pill_active_bg">#3F3014</color>
+    <color name="pill_active_text">#F6C873</color>
+    <color name="pill_neutral_bg">#2B312D</color>
+    <color name="pill_neutral_text">#C4CCC6</color>
+</resources>

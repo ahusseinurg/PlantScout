@@ -15,8 +15,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.ProgressBar
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -184,13 +182,20 @@ class CustomerPlansActivity : AppCompatActivity() {
                 .show()
             return
         }
-        pickCustomer(startFilter) { c ->
-            if (c.completed || c.jobId == 0L) {
-                askPlanType(c, c.completed || startFilter == "completed") { mode -> askWeeds(c, useAi = true, mode = mode) }
-            } else {
-                askWeeds(c, useAi = true, mode = CustomerPlan.MODE_ERADICATION)
+        CustomerPickerSheet(
+            this,
+            startFilter,
+            onPicked = { c ->
+                if (c.completed) {
+                    askPlanType(c, true) { mode -> askWeeds(c, useAi = true, mode = mode) }
+                } else {
+                    askWeeds(c, useAi = true, mode = CustomerPlan.MODE_ERADICATION)
+                }
+            },
+            onManual = {
+                manualCustomer { c -> askPlanType(c, startFilter == "completed") { mode -> askWeeds(c, useAi = true, mode = mode) } }
             }
-        }
+        ).show()
     }
 
     private fun askPlanType(c: CrmCustomer, jobDone: Boolean, onChosen: (String) -> Unit) {
@@ -205,95 +210,6 @@ class CustomerPlansActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
-    }
-
-    private fun pickCustomer(startFilter: String, onPicked: (CrmCustomer) -> Unit) {
-        val box = LinearLayout(this)
-        box.orientation = LinearLayout.VERTICAL
-        box.setPadding(dp(16), dp(8), dp(16), 0)
-        val search = EditText(this)
-        search.hint = "Search name, email, phone, address or job #"
-        search.setSingleLine(true)
-        val filters = RadioGroup(this)
-        filters.orientation = RadioGroup.HORIZONTAL
-        val filterKeys = listOf("all", "completed", "active")
-        listOf("All", "Job done", "Active").forEachIndexed { i, label ->
-            val rb = RadioButton(this)
-            rb.text = label
-            rb.id = 5000 + i
-            filters.addView(rb)
-        }
-        var filter = if (startFilter in filterKeys) startFilter else "all"
-        filters.check(5000 + filterKeys.indexOf(filter))
-        val progress = ProgressBar(this)
-        val info = TextView(this)
-        info.setPadding(0, dp(6), 0, dp(6))
-        val lv = ListView(this)
-        box.addView(search)
-        box.addView(filters)
-        box.addView(progress)
-        box.addView(info)
-        box.addView(lv, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(360)))
-
-        var results: List<CrmCustomer> = emptyList()
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle("Choose weed-control customer")
-            .setView(box)
-            .setNeutralButton("Enter manually") { _, _ -> manualCustomer(onPicked) }
-            .setNegativeButton("Cancel", null)
-            .show()
-
-        val handler = Handler(Looper.getMainLooper())
-        var seq = 0
-        fun load(q: String) {
-            val mySeq = ++seq
-            progress.visibility = View.VISIBLE
-            Thread {
-                val r = runCatching { CrmClient.customers(this, q, filter) }
-                runOnUiThread {
-                    if (mySeq != seq || !dialog.isShowing) return@runOnUiThread
-                    progress.visibility = View.GONE
-                    r.onSuccess { list ->
-                        results = list
-                        info.text = if (list.isEmpty()) {
-                            if (filter == "completed") "No completed weed-control jobs found." else "No weed-control customers found."
-                        } else "${list.size} customer(s). Tap one."
-                        lv.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, list.map { c ->
-                            val line2 = listOf(
-                                c.jobNumber.takeIf { it.isNotBlank() }?.let { "Job $it" },
-                                c.status.takeIf { it.isNotBlank() },
-                                if (c.acres > 0) "${c.acres} ac" else null
-                            ).filterNotNull().joinToString(" · ")
-                            val done = if (c.completed) "\n✓ Job done" + (c.completedAt.takeIf { it.isNotBlank() }?.let { " ${it.take(10)}" } ?: "") else ""
-                            "${c.name}\n${c.address.ifBlank { c.email }}\n$line2$done"
-                        })
-                    }.onFailure { e ->
-                        results = emptyList()
-                        lv.adapter = null
-                        info.text = e.message ?: "Couldn't load customers."
-                    }
-                }
-            }.start()
-        }
-        val searchRunnable = Runnable { load(search.text.toString().trim()) }
-        filters.setOnCheckedChangeListener { _, checkedId ->
-            filter = filterKeys.getOrElse(checkedId - 5000) { "all" }
-            load(search.text.toString().trim())
-        }
-        search.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                handler.removeCallbacks(searchRunnable)
-                handler.postDelayed(searchRunnable, 450)
-            }
-        })
-        lv.setOnItemClickListener { _, _, pos, _ ->
-            val c = results.getOrNull(pos) ?: return@setOnItemClickListener
-            dialog.dismiss()
-            onPicked(c)
-        }
-        load("")
     }
 
     private fun manualCustomer(onPicked: (CrmCustomer) -> Unit) {
@@ -330,55 +246,21 @@ class CustomerPlansActivity : AppCompatActivity() {
             .show()
     }
 
-    /** Lets the user confirm/edit which weeds go in the plan (prefilled from the scans). */
+    /** "Plants in this plan": scanned + manual plants + this job's earlier research, all editable. */
     private fun askWeeds(customer: CrmCustomer, useAi: Boolean, mode: String) {
         val scans = PlantStore.load(this)
-        val candidates = scans.mapNotNull { it.selected }
+        val initial = mutableListOf<Pair<String, Candidate?>>()
+        scans.mapNotNull { it.selected }
             .groupBy { it.scientificName.lowercase() }
             .map { (_, cs) -> cs.maxByOrNull { it.score } ?: cs.first() }
-        fun label(c: Candidate) =
-            if (c.commonName.isNotBlank()) "${c.commonName} (${c.scientificName})" else c.scientificName
-        val byLabel = candidates.associateBy { label(it) }
-
-        val box = LinearLayout(this)
-        box.orientation = LinearLayout.VERTICAL
-        box.setPadding(dp(20), dp(8), dp(20), 0)
-        val weedsIn = EditText(this)
-        weedsIn.hint = "One weed per line"
-        weedsIn.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-        weedsIn.minLines = 3
-        val prefill = (candidates.map { label(it) } + customer.previousWeeds)
-            .distinctBy { it.lowercase() }
-        weedsIn.setText(prefill.joinToString("\n"))
-        val notesIn = EditText(this)
-        notesIn.hint = "Notes for the plan (optional): e.g. dogs on site, creek on east side"
-        notesIn.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-        box.addView(weedsIn)
-        if (useAi) box.addView(notesIn)
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Weeds for ${customer.name.ifBlank { "this customer" }}")
-            .setMessage(
-                when {
-                    prefill.isEmpty() -> "No scanned plants or earlier research for this job — type the weeds found on the property, one per line."
-                    customer.previousWeeds.isNotEmpty() && candidates.isEmpty() ->
-                        "These are the weeds researched for this job before. Remove any that don't belong, or add more (one per line)."
-                    else -> "These come from your scans" + (if (customer.previousWeeds.isNotEmpty()) " and this job's earlier research" else "") +
-                        ". Remove any that don't belong, or add more (one per line)."
-                }
-            )
-            .setView(box)
-            .setPositiveButton(if (useAi) "Generate with AI" else "Create plan") { _, _ ->
-                val lines = weedsIn.text.toString().lines().map { it.trim() }.filter { it.isNotEmpty() }.distinct()
-                if (lines.isEmpty()) {
-                    Toast.makeText(this, "Add at least one weed.", Toast.LENGTH_LONG).show()
-                    return@setPositiveButton
-                }
-                val weeds = lines.take(12).map { WeedEntry(it, byLabel[it]) }
-                generate(customer, weeds, notesIn.text.toString().trim(), useAi, scans, mode)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+            .forEach { c -> initial += PlantCatalog.displayLabel(c) to c }
+        customer.previousWeeds.forEach { name ->
+            val hit = PlantCatalog.find(name)
+            initial += name to (if (hit != null) PlantCatalog.toCandidate(name) else null)
+        }
+        PlanPlantsSheet(this, customer, mode, useAi, initial) { weeds, notes ->
+            generate(customer, weeds, notes, useAi, scans, mode)
+        }.show()
     }
 
     private fun generate(customer: CrmCustomer, weeds: List<WeedEntry>, notes: String, useAi: Boolean, scans: List<PlantRecord>, mode: String) {

@@ -2,4 +2,10 @@
     <color name="green_primary">#2E7D32</color>
     <color name="warning">#C62828</color>
     <color name="ic_launcher_background">#2E7D32</color>
+    <color name="pill_done_bg">#DDF3E4</color>
+    <color name="pill_done_text">#1B6B38</color>
+    <color name="pill_active_bg">#FFEFD2</color>
+    <color name="pill_active_text">#8A5300</color>
+    <color name="pill_neutral_bg">#ECEFEA</color>
+    <color name="pill_neutral_text">#44504A</color>
 </resources>

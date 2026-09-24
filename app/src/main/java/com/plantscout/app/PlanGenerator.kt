@@ -126,7 +126,8 @@ object PlanGenerator {
             val family = if (c.family.isNotBlank()) " · ${c.family}" else ""
             sb.line("${c.scientificName}$family")
             val seen = if (g.count > 1) " · scanned ${g.count}×" else ""
-            sb.line("Match ${pct(g.score)}% · ${g.info.strategy.label} · ${levelText(g.match.level)}$seen")
+            val how = if (c.isManual) "Added manually" else "Match ${pct(g.score)}%"
+            sb.line("$how · ${g.info.strategy.label} · ${levelText(g.match.level)}$seen")
             if (g.info.hazards.isNotEmpty()) {
                 sb.line("⚠ ${g.info.hazards.joinToString { it.label }} — see safety notes above.")
             }

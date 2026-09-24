@@ -230,12 +230,13 @@ object CustomerPlanBuilder {
             .map { (_, cs) ->
                 val best = cs.maxByOrNull { it.score } ?: cs.first()
                 val times = if (cs.size > 1) " — found ${cs.size} times" else ""
-                "• ${best.displayName} (${best.scientificName}) — ${(best.score * 100).roundToInt()}% identification match$times"
+                val how = if (best.isManual) "added manually" else "${(best.score * 100).roundToInt()}% identification match"
+                "• ${PlantCatalog.displayLabel(best)} — $how$times"
             }
         val weedLines = weeds.map { "• ${weedTitle(it).removePrefix("Weed: ")}" }
         s += PlanSection(
             "Plants identified on site",
-            (if (scanLines.isNotEmpty()) "Field scan results:\n" + scanLines.joinToString("\n") + "\n\n" else "") +
+            (if (scanLines.isNotEmpty()) "Plants recorded on site:\n" + scanLines.joinToString("\n") + "\n\n" else "") +
                 (if (followUp) "Weeds covered in this follow-up plan:\n" else "Included in this plan:\n") + weedLines.joinToString("\n")
         )
 
