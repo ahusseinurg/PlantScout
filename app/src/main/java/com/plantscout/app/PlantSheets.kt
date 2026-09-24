@@ -37,6 +37,7 @@ private object PlantNameField {
         val info = KnowledgeBase.lookup(c).info
         val hazards = info.hazards.joinToString("  ") { "⚠ ${it.label}" }
         return "✓ ${hit.common} · ${hit.scientific} · ${hit.family}\n${info.strategy.label}" +
+            (if (hit.native) "\n🌿 Native plant — often valuable for wildlife; consider whether it really needs removing." else "") +
             if (hazards.isNotEmpty()) "\n$hazards" else ""
     }
 }

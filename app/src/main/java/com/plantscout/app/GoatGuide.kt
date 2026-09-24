@@ -32,6 +32,19 @@ object GoatGuide {
         "lepidium draba" to g(GoatFit.PARTIAL, "Goats and sheep graze whitetop early in the season, which cuts seed production, but won't kill the deep roots."),
         "cardaria draba" to g(GoatFit.PARTIAL, "Goats and sheep graze whitetop early in the season, which cuts seed production, but won't kill the deep roots."),
         "ailanthus altissima" to g(GoatFit.CAUTION, "Goats will browse tree-of-heaven suckers, but the leaves are mildly toxic. Use only as part of a mixed diet, mainly to suppress suckers after the main trees are treated."),
+        "chrysothamnus viscidiflorus" to g(GoatFit.GOOD, "Goats browse rabbitbrush, especially new growth, which keeps it thinned. It's a native shrub, so a light touch may be all that's needed."),
+        "ericameria nauseosa" to g(GoatFit.PARTIAL, "Goats browse rubber rabbitbrush only lightly; it's less palatable than most shrubs. Combine with cutting and crown removal where needed."),
+        "ambrosia psilostachya" to g(GoatFit.GOOD, "Goats eat western ragweed. Graze repeatedly before it flowers to drain the creeping roots."),
+        "artemisia tridentata" to g(GoatFit.PARTIAL, "Goats browse sagebrush more than cattle do, but it's aromatic and not a preferred food. It's also valuable native habitat."),
+        "gutierrezia sarothrae" to g(GoatFit.UNSAFE, "Broom snakeweed is toxic and can cause abortion in goats. Don't graze pregnant does where it grows."),
+        "xanthium strumarium" to g(GoatFit.UNSAFE, "Cocklebur seedlings and seeds are poisonous, and burs tangle in hair. Remove it by hand before grazing."),
+        "sarcobatus vermiculatus" to g(GoatFit.CAUTION, "Greasewood is high in oxalates. Goats handle small amounts, but hungry animals that gorge on it can be poisoned. Make sure other forage is available."),
+        "atriplex canescens" to g(GoatFit.GOOD, "Fourwing saltbush is excellent browse — which also means goats may eat a native shrub you want to keep."),
+        "asclepias speciosa" to g(GoatFit.UNSAFE, "Milkweed is toxic to goats. Fence it off; it's also essential for monarch butterflies."),
+        "hyoscyamus niger" to g(GoatFit.UNSAFE, "Black henbane is poisonous. Remove it by hand, with gloves, before grazing."),
+        "hordeum jubatum" to g(GoatFit.CAUTION, "Graze only before the seed heads form — the barbed awns injure mouths, eyes and ears."),
+        "chondrilla juncea" to g(GoatFit.GOOD, "Goats and sheep graze rush skeletonweed rosettes and flowering stems, cutting seed production. Repeat over several years."),
+        "opuntia polyacantha" to g(GoatFit.CAUTION, "Goats may nibble pricklypear, but the spines injure mouths. Remove it by hand instead."),
         "phragmites australis" to g(GoatFit.GOOD, "Goats graze young phragmites shoots and repeated grazing weakens stands, but grazing wetlands can damage banks and may need permits.")
     )
 
@@ -87,7 +100,8 @@ object GoatGuide {
         "cyperus" to g(GoatFit.PARTIAL, "Grazing removes leaves but won't kill the tubers."),
         "verbascum" to g(GoatFit.PARTIAL, "Goats dislike the fuzzy leaves; they may eat flower stalks. Better to dig rosettes."),
         "lythrum" to g(GoatFit.PARTIAL, "Goats eat loosestrife, but wetland grazing needs permits and care; biocontrol beetles are more common."),
-        "tamarix" to g(GoatFit.PARTIAL, "Goats browse young tamarisk regrowth; best used after cutting to suppress resprouts.")
+        "tamarix" to g(GoatFit.PARTIAL, "Goats browse young tamarisk regrowth; best used after cutting to suppress resprouts."),
+        "helianthus" to g(GoatFit.GOOD, "Goats readily eat sunflowers — leaves, stalks and heads. Graze before the seeds ripen.")
     )
 
     private fun defaultFor(s: Strategy): GoatAdvice = when (s) {

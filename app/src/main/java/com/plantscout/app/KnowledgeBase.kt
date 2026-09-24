@@ -188,6 +188,29 @@ object KnowledgeBase {
         "toxicodendron vernix" to p(WOODY, URUSHIOL),
         "cenchrus longispinus" to p(ANNUAL_GRASS, SPINES),
         "solanum carolinense" to p(CREEPING, SPINES, TOXIC),
+        // Western rangeland / Great Basin
+        "chrysothamnus viscidiflorus" to p(WOODY, note = "Native shrub that feeds pollinators and wildlife, especially in fall. Consider thinning rather than removing it all. It resprouts from the crown after cutting, so dig out the crown where removal is needed."),
+        "ericameria nauseosa" to p(WOODY, note = "Native rubber rabbitbrush feeds late-season pollinators and shelters wildlife. It resprouts after cutting; dig out the crown where it must go."),
+        "helianthus petiolaris" to p(ANNUAL_BROADLEAF, note = "Native annual sunflower; its seeds feed birds. If it's unwanted, remove it before it sets seed."),
+        "helianthus annuus" to p(ANNUAL_BROADLEAF, note = "Native annual sunflower; its seeds feed birds. If it's unwanted, remove it before it sets seed."),
+        "ambrosia psilostachya" to p(CREEPING, note = "Native perennial ragweed that spreads by creeping roots and thrives on overgrazed or disturbed ground. Its pollen is a major hay-fever trigger. Repeated mowing or grazing before it flowers, plus thickening the grass cover, keeps it in check."),
+        "artemisia tridentata" to p(WOODY, note = "Native big sagebrush is key habitat for sage-grouse and other wildlife. Remove it only where it's truly a problem. It does not resprout after being cut at the base."),
+        "gutierrezia sarothrae" to p(WOODY, LIVESTOCK, note = "Native broom snakeweed increases on overgrazed rangeland and is toxic to livestock; it can cause abortion in cattle, sheep and goats. Improving grass cover is the long-term fix."),
+        "grindelia squarrosa" to p(BIENNIAL, note = "Native curlycup gumweed; livestock usually avoid it. It increases where grass cover is thin."),
+        "xanthium strumarium" to p(ANNUAL_BROADLEAF, LIVESTOCK, SPINES, note = "Cocklebur seedlings (at the two-leaf stage) and seeds are poisonous to livestock, and the burs tangle in hair and fleece. Pull or hoe before burs form."),
+        "iva axillaris" to p(CREEPING, note = "Native poverty weed spreads by creeping roots, often in salty or disturbed soil."),
+        "chondrilla juncea" to p(CREEPING, NOXIOUS, note = "Rush skeletonweed has deep roots and regrows from root pieces, so don't till it. Expect several years of follow-up."),
+        "tragopogon dubius" to p(TAPROOT),
+        "sarcobatus vermiculatus" to p(WOODY, LIVESTOCK, note = "Native greasewood is high in oxalates and can poison sheep and other livestock that eat a lot of it quickly."),
+        "atriplex canescens" to p(WOODY, note = "Native fourwing saltbush is valuable wildlife and livestock browse — usually worth keeping."),
+        "asclepias speciosa" to p(CREEPING, TOXIC, LIVESTOCK, note = "Native showy milkweed is essential for monarch butterflies. It's toxic to livestock, so fence it off or relocate it rather than graze it."),
+        "ceratocephala testiculata" to p(ANNUAL_BROADLEAF, LIVESTOCK, SPINES, note = "Bur buttercup comes up very early in spring, is toxic to sheep, and has spiny seed heads. Pull or hoe it in early spring, before it seeds."),
+        "hyoscyamus niger" to p(BIENNIAL, TOXIC, LIVESTOCK, NOXIOUS, note = "Black henbane is poisonous to people and animals. Wear gloves, bag the seed pods, and never let it go to seed."),
+        "erodium cicutarium" to p(ANNUAL_BROADLEAF),
+        "malva neglecta" to p(TAPROOT),
+        "hordeum jubatum" to p(TAPROOT, SPINES, note = "Native foxtail barley's barbed seed heads injure the mouths, eyes and ears of animals. Mow or graze it before the heads form."),
+        "lepidium perfoliatum" to p(ANNUAL_BROADLEAF),
+        "opuntia polyacantha" to p(GENERIC, SPINES, note = "Native pricklypear. Dig out pads and roots with heavy gloves and tools. Fallen pads can take root, so bag them."),
         "solanum elaeagnifolium" to p(CREEPING, SPINES, TOXIC, NOXIOUS)
     )
 
@@ -275,8 +298,18 @@ object KnowledgeBase {
         "heracleum" to p(BIENNIAL, PHOTOTOXIC),
         "pastinaca" to p(BIENNIAL, PHOTOTOXIC),
         "ricinus" to p(ANNUAL_BROADLEAF, DEADLY),
-        "nerium" to p(WOODY, DEADLY)
+        "nerium" to p(WOODY, DEADLY),
+        "chrysothamnus" to p(WOODY),
+        "ericameria" to p(WOODY),
+        "helianthus" to p(ANNUAL_BROADLEAF),
+        "gutierrezia" to p(WOODY, LIVESTOCK),
+        "xanthium" to p(ANNUAL_BROADLEAF, LIVESTOCK, SPINES),
+        "asclepias" to p(CREEPING, TOXIC, LIVESTOCK),
+        "opuntia" to p(GENERIC, SPINES),
+        "hyoscyamus" to p(BIENNIAL, TOXIC, LIVESTOCK)
     )
+
+    fun isKnownGenus(g: String): Boolean = g.lowercase().trim() in genera
 
     /** Keyed by lowercase family: a rough fallback only. */
     private val families: Map<String, PlantInfo> = mapOf(

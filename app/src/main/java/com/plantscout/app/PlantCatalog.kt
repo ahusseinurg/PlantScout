@@ -6,7 +6,7 @@ package com.plantscout.app
  */
 object PlantCatalog {
 
-    data class Entry(val common: String, val scientific: String, val family: String) {
+    data class Entry(val common: String, val scientific: String, val family: String, val native: Boolean = false) {
         /** Text shown in the suggestion list, including any alternate name. */
         val label: String get() = "$common — $scientific"
         /** Main common name, without the alternate name in brackets. */
@@ -17,6 +17,8 @@ object PlantCatalog {
     }
 
     private fun e(common: String, scientific: String, family: String) = Entry(common, scientific, family)
+    /** Native to the western / North American range — often valuable for wildlife. */
+    private fun n(common: String, scientific: String, family: String) = Entry(common, scientific, family, native = true)
 
     val entries: List<Entry> = listOf(
         // Asteraceae
@@ -33,9 +35,9 @@ object PlantCatalog {
         e("Greater burdock", "Arctium lappa", "Asteraceae"),
         e("Common tansy", "Tanacetum vulgare", "Asteraceae"),
         e("Tansy ragwort", "Jacobaea vulgaris", "Asteraceae"),
-        e("Common ragweed", "Ambrosia artemisiifolia", "Asteraceae"),
-        e("Giant ragweed", "Ambrosia trifida", "Asteraceae"),
-        e("Horseweed", "Erigeron canadensis", "Asteraceae"),
+        n("Common ragweed", "Ambrosia artemisiifolia", "Asteraceae"),
+        n("Giant ragweed", "Ambrosia trifida", "Asteraceae"),
+        n("Horseweed", "Erigeron canadensis", "Asteraceae"),
         e("Orange hawkweed", "Pilosella aurantiaca", "Asteraceae"),
         e("Oxeye daisy", "Leucanthemum vulgare", "Asteraceae"),
         e("Chicory", "Cichorium intybus", "Asteraceae"),
@@ -92,18 +94,18 @@ object PlantCatalog {
         e("Castor bean", "Ricinus communis", "Euphorbiaceae"),
         // Carrot family (several dangerous)
         e("Poison hemlock", "Conium maculatum", "Apiaceae"),
-        e("Western water hemlock", "Cicuta douglasii", "Apiaceae"),
-        e("Spotted water hemlock", "Cicuta maculata", "Apiaceae"),
+        n("Western water hemlock", "Cicuta douglasii", "Apiaceae"),
+        n("Spotted water hemlock", "Cicuta maculata", "Apiaceae"),
         e("Wild parsnip", "Pastinaca sativa", "Apiaceae"),
         e("Giant hogweed", "Heracleum mantegazzianum", "Apiaceae"),
         e("Goutweed (bishop's weed)", "Aegopodium podagraria", "Apiaceae"),
         // Nightshades
         e("Jimsonweed", "Datura stramonium", "Solanaceae"),
-        e("Sacred datura", "Datura wrightii", "Solanaceae"),
-        e("Silverleaf nightshade", "Solanum elaeagnifolium", "Solanaceae"),
-        e("Horsenettle", "Solanum carolinense", "Solanaceae"),
+        n("Sacred datura", "Datura wrightii", "Solanaceae"),
+        n("Silverleaf nightshade", "Solanum elaeagnifolium", "Solanaceae"),
+        n("Horsenettle", "Solanum carolinense", "Solanaceae"),
         e("Black nightshade", "Solanum nigrum", "Solanaceae"),
-        e("Buffalobur", "Solanum rostratum", "Solanaceae"),
+        n("Buffalobur", "Solanum rostratum", "Solanaceae"),
         // Knotweeds and docks
         e("Japanese knotweed", "Reynoutria japonica", "Polygonaceae"),
         e("Giant knotweed", "Reynoutria sachalinensis", "Polygonaceae"),
@@ -147,10 +149,10 @@ object PlantCatalog {
         e("Japanese honeysuckle", "Lonicera japonica", "Caprifoliaceae"),
         e("English ivy", "Hedera helix", "Araliaceae"),
         e("Oriental bittersweet", "Celastrus orbiculatus", "Celastraceae"),
-        e("Poison ivy", "Toxicodendron radicans", "Anacardiaceae"),
-        e("Western poison ivy", "Toxicodendron rydbergii", "Anacardiaceae"),
-        e("Poison oak (Pacific)", "Toxicodendron diversilobum", "Anacardiaceae"),
-        e("Poison sumac", "Toxicodendron vernix", "Anacardiaceae"),
+        n("Poison ivy", "Toxicodendron radicans", "Anacardiaceae"),
+        n("Western poison ivy", "Toxicodendron rydbergii", "Anacardiaceae"),
+        n("Pacific poison oak", "Toxicodendron diversilobum", "Anacardiaceae"),
+        n("Poison sumac", "Toxicodendron vernix", "Anacardiaceae"),
         // Trees
         e("Tree of heaven", "Ailanthus altissima", "Simaroubaceae"),
         e("Siberian elm", "Ulmus pumila", "Ulmaceae"),
@@ -159,8 +161,36 @@ object PlantCatalog {
         e("Purple loosestrife", "Lythrum salicaria", "Lythraceae"),
         e("Water hyacinth", "Pontederia crassipes", "Pontederiaceae"),
         e("Eurasian watermilfoil", "Myriophyllum spicatum", "Haloragaceae"),
-        e("Broadleaf cattail", "Typha latifolia", "Typhaceae")
+        n("Broadleaf cattail", "Typha latifolia", "Typhaceae"),
+        // Western rangeland and Great Basin plants
+        n("Yellow rabbitbrush (green rabbitbrush)", "Chrysothamnus viscidiflorus", "Asteraceae"),
+        n("Rubber rabbitbrush", "Ericameria nauseosa", "Asteraceae"),
+        n("Prairie sunflower", "Helianthus petiolaris", "Asteraceae"),
+        n("Common sunflower", "Helianthus annuus", "Asteraceae"),
+        n("Western ragweed (perennial ragweed)", "Ambrosia psilostachya", "Asteraceae"),
+        n("Big sagebrush", "Artemisia tridentata", "Asteraceae"),
+        n("Broom snakeweed", "Gutierrezia sarothrae", "Asteraceae"),
+        n("Curlycup gumweed", "Grindelia squarrosa", "Asteraceae"),
+        n("Common cocklebur", "Xanthium strumarium", "Asteraceae"),
+        n("Poverty weed", "Iva axillaris", "Asteraceae"),
+        e("Rush skeletonweed", "Chondrilla juncea", "Asteraceae"),
+        e("Yellow salsify", "Tragopogon dubius", "Asteraceae"),
+        n("Greasewood", "Sarcobatus vermiculatus", "Sarcobataceae"),
+        n("Fourwing saltbush", "Atriplex canescens", "Amaranthaceae"),
+        n("Showy milkweed", "Asclepias speciosa", "Apocynaceae"),
+        e("Bur buttercup", "Ceratocephala testiculata", "Ranunculaceae"),
+        e("Black henbane", "Hyoscyamus niger", "Solanaceae"),
+        e("Redstem filaree (storksbill)", "Erodium cicutarium", "Geraniaceae"),
+        e("Common mallow", "Malva neglecta", "Malvaceae"),
+        n("Foxtail barley", "Hordeum jubatum", "Poaceae"),
+        e("Clasping pepperweed", "Lepidium perfoliatum", "Brassicaceae"),
+        n("Plains pricklypear", "Opuntia polyacantha", "Cactaceae")
     )
+
+    private val catalogGenera: Set<String> by lazy { entries.map { it.scientific.substringBefore(' ').lowercase() }.toSet() }
+
+    /** True when the first word is a genus PlantScout knows, so "ambrosia psilostachya" is read as a scientific name. */
+    private fun knownGenus(g: String) = g.lowercase() in catalogGenera || KnowledgeBase.isKnownGenus(g)
 
     val labels: List<String> by lazy { entries.map { it.label } }
 
@@ -195,6 +225,20 @@ object PlantCatalog {
         }
         // Not in the list: keep exactly what was typed. Any "(Genus species)" part is used as the scientific name.
         val clean = text.trim().replace(Regex("\\s+"), " ")
+        val binomial = Regex("^([A-Za-z]+) ([A-Za-z-]+)( [A-Za-z.-]+)*$").find(clean)
+        if (binomial != null && !clean.contains('(') && knownGenus(binomial.groupValues[1])) {
+            // Looks like "Genus species" with a genus we know: tidy the capitalization.
+            val words = clean.split(' ')
+            val sci = words.first().lowercase().replaceFirstChar { it.uppercase() } + " " + words.drop(1).joinToString(" ") { it.lowercase() }
+            return Candidate(
+                scientificName = sci,
+                commonName = "",
+                genus = sci.substringBefore(' '),
+                family = entries.firstOrNull { it.scientific.substringBefore(' ').equals(sci.substringBefore(' '), true) }?.family ?: "",
+                score = 1.0,
+                source = Candidate.SOURCE_MANUAL
+            )
+        }
         val sci = Regex("\\(([^)]+)\\)").find(clean)?.groupValues?.get(1)?.trim()
         val common = clean.substringBefore(" (").trim()
         return Candidate(
