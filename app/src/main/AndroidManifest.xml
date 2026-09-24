@@ -36,6 +36,17 @@
             android:parentActivityName=".MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
 
+        <activity
+            android:name=".CustomerPlansActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
+            android:name=".PlanEditorActivity"
+            android:exported="false"
+            android:parentActivityName=".CustomerPlansActivity"
+            android:windowSoftInputMode="adjustResize" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

@@ -52,6 +52,7 @@ class PlanActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.plan_menu, menu)
+        menu.add(Menu.NONE, 7001, Menu.NONE, "Make customer plan (letterhead + AI)")
         return true
     }
 
@@ -59,6 +60,7 @@ class PlanActivity : AppCompatActivity() {
         val plain = PlanGenerator.toPlainText(plan)
         return when (item.itemId) {
             android.R.id.home -> { finish(); true }
+            7001 -> { startActivity(Intent(this, CustomerPlansActivity::class.java)); true }
             R.id.action_share -> {
                 val send = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"

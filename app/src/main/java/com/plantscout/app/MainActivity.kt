@@ -399,6 +399,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        menu.add(Menu.NONE, MENU_CUSTOMER_PLANS, Menu.NONE, "Customer plans (letterhead + AI)")
+        menu.add(Menu.NONE, MENU_CONNECTION, Menu.NONE, "Company connection")
         menu.add(Menu.NONE, MENU_UPDATE, Menu.NONE,
             "Check for updates (v${UpdateChecker.currentVersionName(this)})")
         return true
@@ -408,11 +410,15 @@ class MainActivity : AppCompatActivity() {
         R.id.action_settings -> { showSettings(); true }
         R.id.action_clear -> { clearAll(); true }
         MENU_UPDATE -> { checkForUpdates(manual = true); true }
+        MENU_CUSTOMER_PLANS -> { startActivity(Intent(this, CustomerPlansActivity::class.java)); true }
+        MENU_CONNECTION -> { CustomerPlansActivity.showConnectionDialog(this); true }
         else -> super.onOptionsItemSelected(item)
     }
 
     companion object {
         private const val MENU_UPDATE = 9001
+        private const val MENU_CUSTOMER_PLANS = 9002
+        private const val MENU_CONNECTION = 9003
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
